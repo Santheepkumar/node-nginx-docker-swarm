@@ -1,0 +1,40 @@
+# For some reasons it's not working, always getting not found page on /8000 or /
+
+version: '3.8'
+
+services:
+  app:
+    image: node-docker-swarm:1.0
+    build:
+      context: .
+    deploy:
+      replicas: 3
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.app.rule=PathPrefix(`/`)"
+        - "traefik.http.services.app.loadbalancer.server.port=3000"
+    environment:
+      - PORT=3000
+    networks:
+      - app-network
+
+  traefik_rp:
+    image: traefik:v2.10
+    command:
+      - '--log.level=DEBUG'
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "8000:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - app-network
+    depends_on:
+      - app
+
+networks:
+  app-network:
+    driver: bridge
